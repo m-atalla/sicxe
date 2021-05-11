@@ -7,7 +7,7 @@ def main():
     # reading input file and formating
     with open('input.asm') as src:
         asm = [
-            Line(sub(r'\s+', ' ', l).rstrip().split(' ')) 
+            Line(sub('\s+', ' ', l).rstrip().split(' ')) 
             for l in src
         ]
 
@@ -20,9 +20,6 @@ def main():
 
     # pass two
     pass_two.replace_label(asm, sym_table)
-
-    for l in asm:
-        print(l)
 
 def intermediate_file(asm):
     with open('out.iasm', 'w') as out:
