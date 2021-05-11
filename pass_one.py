@@ -1,6 +1,3 @@
-from re import sub
-from line import Line
-
 def locctr_list(asm):
     """
     locctr added to each line object
