@@ -8,10 +8,10 @@ class Line:
         """
         Intermediate line representation
         """
-        iasm = fill(self.label)
+        iasm = fill(self.locctr)
+        iasm += fill(self.label)
         iasm += fill(self.op)
-        iasm += fill(self.operand)
-        iasm += fill(self.locctr) + '\n'
+        iasm += fill(self.operand) + '\n'
         return iasm
     
     def __str__(self):
