@@ -10,9 +10,9 @@ def locctr_list(asm):
         if line.op == 'RESB':
             pc += int(line.operand)
         elif line.op == 'BYTE':
-            pc += len(line.operand) - 3
+            pc += ((len(line.operand) - 3) * 2)
         elif line.op == 'RESW':
-            pc += int(line.operand) * 3
+            pc += (int(line.operand) * 3)
         elif line.op == 'END':
             pass
         else:
