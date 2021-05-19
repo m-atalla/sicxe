@@ -4,21 +4,24 @@ def locctr_list(asm):
     """
     pc = int(asm[0].operand, base=16)
 
+    # START directive and first instruction
     asm[0].locctr = asm[1].locctr = fhex(pc)
 
-    for line in asm[2:]:
+    pc += 3
+
+    for line in asm[2:-1]:
+        line.locctr = fhex(pc)
         if line.op == 'RESB':
             pc += int(line.operand)
         elif line.op == 'BYTE':
             pc += ((len(line.operand) - 3) * 2)
         elif line.op == 'RESW':
             pc += (int(line.operand) * 3)
-        elif line.op == 'END':
-            pass
         else:
            pc += 3
-           
-        line.locctr = fhex(pc)
+
+    # END directive line
+    asm[-1].locctr = asm[-2].locctr
 
 
 def create_sym_table(asm):
