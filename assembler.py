@@ -16,10 +16,12 @@ def main():
 
     sym_table = pass_one.create_sym_table(asm)
 
-    intermediate_file(asm)
+    print(sym_table)
 
+    
     # pass two
     pass_two.replace_label(asm, sym_table)
+    intermediate_file(asm)
 
 def intermediate_file(asm):
     with open('out.iasm', 'w') as out:
