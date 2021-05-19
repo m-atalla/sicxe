@@ -3,6 +3,7 @@ class Line:
         self.label, self.op, self.operand = args
         
         self.locctr = None
+        self.objcode = None
     
     def to_iasm(self):
         """
