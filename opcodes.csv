@@ -1,0 +1,9 @@
+mnemonic,opcode
+LDA,00
+LDCH,50
+STA,0C
+LDX,04
+ADD,18
+COMP,28
+TIX,2C
+JLT,38
