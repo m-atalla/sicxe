@@ -11,11 +11,11 @@ def locctr_list(asm):
 
     for line in asm[2:-1]:
         line.locctr = fhex(pc)
-        if line.op == 'RESB':
+        if line.mnemonic == 'RESB':
             pc += int(line.operand)
-        elif line.op == 'BYTE':
+        elif line.mnemonic == 'BYTE':
             pc += ((len(line.operand) - 3) * 2)
-        elif line.op == 'RESW':
+        elif line.mnemonic == 'RESW':
             pc += (int(line.operand) * 3)
         else:
            pc += 3
