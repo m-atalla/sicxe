@@ -1,21 +1,39 @@
 from csv import DictReader
+from typing import List
+from line import Line
 
-def replace_label(asm, sym_tab):
-    for line in asm:
-        if line.operand in sym_tab:
-            line.operand = sym_tab[line.operand]
-        elif ',' in line.operand:
-            label, register = line.operand.split(',')
-            label = sym_tab[label]
-            line.operand = f"{label},{register}"
+def gen_objcode(asm: List[Line], sym_tab):
+    opcodes_dict = get_opcodes()
+    for line in asm:        
+        if line.mnemonic in ['RESW', 'RESB']:
+            line.objcode = ''
+        elif line.mnemonic == 'WORD':
+            line.objcode = f"0x{hex(int(line.operand))[2:].zfill(6)}"
+        elif line.mnemonic == 'BYTE':
+            if line.operand[0] == 'H':
+                line.objcode = "0x" + line.operand[2:-1].zfill(6)
+            elif line.operand[0] == 'C':
+                char_ascii_list = list(map(lambda char: hex(ord(char))[2:], line.operand[2:-1]))
+                line.objcode = "0x" + ("".join(char_ascii_list)).zfill(6)
+        else:
+            opcode_hex = opcodes_dict[line.mnemonic]
+            if ',' in line.operand:
+                # indexed addressing
+                operand = line.operand.split(',')[0]
+                operand_hex = sym_tab[operand]
+                operand_bin = bin(int(operand_hex, base=16))[2:].zfill(16)
+                operand_bin = '0b1' + operand_bin[1:]
+                operand_hex = hex(int(operand_bin, base=2))
+            else:
+                # direct addressing
+                operand_hex = sym_tab[line.operand]
+            
+            line.objcode = f"0x{opcode_hex}{operand_hex[2:]}"
+            
 
-
-def create_objcode(asm):
-    pass
-
-def get_opcodes():
+def get_opcodes() -> dict:
     opcodes = {}
-    with open('opcodes') as src:
+    with open('opcodes.csv') as src:
         reader = DictReader(src)
         opcodes = {row['mnemonic']:row['opcode'] for row in reader}
     return opcodes
