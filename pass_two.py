@@ -28,7 +28,39 @@ def gen_objcode(asm: List[Line], sym_tab):
             
             line.objcode = f"0x{opcode_hex}{operand_hex[2:]}"
             
-def get_opcodes() -> dict:
+
+def create_hte_record(asm: List[Line]):
+    prog_name = asm[0].label + ('x' * (6 - len(asm[0].label)))
+
+    h_list = ['H', prog_name, format_hex(asm[0].locctr), format_hex(asm[-1].locctr)]
+
+    h = ".".join(h_list)
+    
+    print(h)
+
+    # Skip start directive index
+    i = 1 
+    while i < len(asm):
+        t = []
+        start = asm[i].locctr 
+        while i < len(asm) and asm[i].mnemonic not in ['RESB', 'RESW', 'END']:
+            if asm[i].objcode:
+                t.append(format_hex(asm[i].objcode))
+            i += 1
+
+        # filter RESB and RESW lists
+        if len(t) > 1:
+            end = asm[i].locctr
+            length = format_hex(hex(int(end, base=16) - int(start, base=16)), fill=2)
+            print(".".join(["T", format_hex(start), length] + t))
+        i += 1
+    
+    print(f"E.{format_hex(asm[0].locctr)}")
+
+def format_hex(n, fill = 6):
+    return n[2:].zfill(fill)
+
+def get_opcodes():
     opcodes = {}
     with open('opcodes.csv') as src:
         reader = DictReader(src)
