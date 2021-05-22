@@ -9,19 +9,16 @@ def locctr_list(asm):
 
     pc += 3
 
-    for line in asm[2:-1]:
+    for line in asm[2:]:
         line.locctr = fhex(pc)
         if line.mnemonic == 'RESB':
             pc += int(line.operand)
         elif line.mnemonic == 'BYTE':
             pc += ((len(line.operand) - 3) * 2)
         elif line.mnemonic == 'RESW':
-            pc += (int(line.operand) * 3)
+            pc += (int(line.operand) * 3)            
         else:
            pc += 3
-
-    # END directive line
-    asm[-1].locctr = asm[-2].locctr
 
 
 def create_sym_table(asm):
