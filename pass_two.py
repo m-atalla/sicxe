@@ -21,16 +21,13 @@ def gen_objcode(asm: List[Line], sym_tab):
                 # indexed addressing
                 operand = line.operand.split(',')[0]
                 operand_hex = sym_tab[operand]
-                operand_bin = bin(int(operand_hex, base=16))[2:].zfill(16)
-                operand_bin = '0b1' + operand_bin[1:]
-                operand_hex = hex(int(operand_bin, base=2))
+                operand_hex = hex(int(operand_hex, base = 16) + 8000)
             else:
                 # direct addressing
                 operand_hex = sym_tab[line.operand]
             
             line.objcode = f"0x{opcode_hex}{operand_hex[2:]}"
             
-
 def get_opcodes() -> dict:
     opcodes = {}
     with open('opcodes.csv') as src:
