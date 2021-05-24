@@ -16,9 +16,6 @@ def main():
 
     sym_table = pass_one.create_sym_table(asm)
 
-    print(sym_table)
-
-
     # pass two
     pass_two.gen_objcode(asm[1:-1], sym_table)
 
