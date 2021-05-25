@@ -49,7 +49,7 @@ def create_hte_record(asm: List[Line]):
             i += 1
 
         # filter RESB and RESW lists
-        if len(t) > 1:
+        if len(t) > 0:
             end = asm[i].locctr
             length = format_hex(hex(int(end, base=16) - int(start, base=16)), fill=2)
             print(".".join(["T", format_hex(start), length] + t))
