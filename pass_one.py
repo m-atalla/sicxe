@@ -14,7 +14,10 @@ def locctr_list(asm):
         if line.mnemonic == 'RESB':
             pc += int(line.operand)
         elif line.mnemonic == 'BYTE':
-            pc += ((len(line.operand) - 3) * 2)
+            if line.operand[0] == 'H':
+                pc += (len(line.operand) - 3) * 2
+            elif line.operand[0] == 'C':
+                pc += len(line.operand) - 3
         elif line.mnemonic == 'RESW':
             pc += (int(line.operand) * 3)            
         else:
