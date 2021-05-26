@@ -17,5 +17,5 @@ K300    WORD    100
 THREE   WORD    3
 TWENTY  WORD    20
 CHAR    BYTE    C'EOF'
-HEXA    BYTE    H'1F'
+HEXA    BYTE    X'1F'
         END     Prog1

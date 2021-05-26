@@ -10,7 +10,7 @@ def gen_objcode(asm: List[Line], sym_tab):
         elif line.mnemonic == 'WORD':
             line.objcode = f"0x{hex(int(line.operand))[2:].zfill(6)}"
         elif line.mnemonic == 'BYTE':
-            if line.operand[0] == 'H':
+            if line.operand[0] == 'X':
                 line.objcode = "0x" + line.operand[2:-1].zfill(6)
             elif line.operand[0] == 'C':
                 char_ascii_list = list(map(lambda char: hex(ord(char))[2:], line.operand[2:-1]))
@@ -32,7 +32,9 @@ def gen_objcode(asm: List[Line], sym_tab):
 def create_hte_record(asm: List[Line]):
     prog_name = asm[0].label + ('x' * (6 - len(asm[0].label)))
 
-    h_list = ['H', prog_name, format_hex(asm[0].locctr), format_hex(asm[-1].locctr)]
+    prog_length = hex(int(asm[-1].locctr, base=16) - int(asm[0].locctr, base=16)) 
+
+    h_list = ['H', prog_name, format_hex(asm[0].locctr), format_hex(prog_length)]
 
     h = ".".join(h_list)
     
