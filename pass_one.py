@@ -1,3 +1,5 @@
+from math import ceil
+
 def locctr_list(asm):
     """
     locctr added to each line object
@@ -14,8 +16,9 @@ def locctr_list(asm):
         if line.mnemonic == 'RESB':
             pc += int(line.operand)
         elif line.mnemonic == 'BYTE':
-            if line.operand[0] == 'H':
-                pc += (len(line.operand) - 3) * 2
+            if line.operand[0] == 'X':
+                # increment ceiling of hex fractions
+                pc += ceil((len(line.operand) - 3) / 2)
             elif line.operand[0] == 'C':
                 pc += len(line.operand) - 3
         elif line.mnemonic == 'RESW':
