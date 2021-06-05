@@ -18,4 +18,4 @@ THREE   WORD    3
 TWENTY  WORD    20
 CHAR    BYTE    C'EOF'
 HEXA    BYTE    X'1F'
-        END     Prog1
+        END     Prog2
