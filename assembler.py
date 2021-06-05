@@ -5,7 +5,7 @@ from re import sub
 
 def main():
     # reading input file and formating
-    with open('input.asm') as src:
+    with open('xe_pass_one.asm') as src:
         asm = [
             Line(sub('\s+', ' ', l).rstrip().split(' ')) 
             for l in src
@@ -16,12 +16,17 @@ def main():
 
     sym_table = pass_one.create_sym_table(asm)
 
-    # pass two
-    pass_two.gen_objcode(asm[1:-1], sym_table)
-
     intermediate_file(asm)
     
+    print(sym_table)
+
+    # pass two (SIC)
+    """
+    pass_two.gen_objcode(asm[1:-1], sym_table)
+
+    
     pass_two.create_hte_record(asm)
+    """
 
 
 def intermediate_file(asm):
@@ -30,7 +35,6 @@ def intermediate_file(asm):
         for line in asm:
             out.write(line.to_iasm())
         
-
 
 if __name__ == '__main__':
     main()
