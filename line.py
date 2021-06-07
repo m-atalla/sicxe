@@ -7,6 +7,7 @@ class Line:
             self.label, self.mnemonic = args
             self.operand = None
             
+        self.format = None
         self.locctr = None
         self.objcode = None
     
@@ -18,6 +19,7 @@ class Line:
         iasm += fill(self.label)
         iasm += fill(self.mnemonic)
         iasm += fill(self.operand or '')
+        iasm += f" {self.format} "
         iasm += fill(self.objcode or '') + '\n'
         return iasm
     
