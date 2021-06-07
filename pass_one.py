@@ -1,20 +1,14 @@
 from math import ceil
-from typing import List
 from line import Line
 
-def locctr_list(asm: List[Line]):
+def locctr_list(asm: list[Line]):
     """
     locctr added to each line object
     """
 
-    registers = get_registers()
-    
     pc = int(asm[0].operand, base=16)
-    # START directive and first instruction 
-    asm[0].locctr = asm[1].locctr = fhex(pc)
-    pc += 3
 
-    for line in asm[2:]:
+    for line in asm[1:]:
         line.locctr = fhex(pc)
 
         # Skip BASE directive
@@ -22,34 +16,37 @@ def locctr_list(asm: List[Line]):
             continue 
 
         if not line.operand and line.mnemonic != 'RSUB':
-            # Format 1
             pc += 1
+            line.format = 1
         elif line.mnemonic == 'RSUB':
             pc += 3
+            line.format = 3
+        elif ',' in line.operand:
+            pc_incr = line_format = eval_cs_operand(line.operand)
+            pc += pc_incr
+            line.format = line_format
         elif line.mnemonic[0] == '+':
-            # Format 4
             pc += 4
+            line.format = 4
         elif line.mnemonic == 'RESB':
             pc += int(line.operand)
         elif line.mnemonic == 'BYTE':
-            if line.operand[0] == 'X':
-                # Round up fractions 
-                pc += ceil((len(line.operand) - 3) / 2)
-            elif line.operand[0] == 'C':
-                pc += len(line.operand) - 3
+            pc += eval_byte(line.operand)
         elif line.mnemonic == 'RESW':
-            if line.label == 'COUNT':
-                print("before:", fhex(pc))
             pc += int(line.operand) * 3
         else:
            pc += 3
+           line.format = 3
+
+    # START directive and first instruction 
+    asm[0].locctr = asm[1].locctr
 
 
-def create_sym_table(asm):
-    return {x.label:x.locctr for x in asm if x.label}
+def create_sym_table(asm: list[Line]) -> dict:
+    return {line.label:line.locctr for line in asm[1:] if line.label}
 
 
-def get_registers():
+def get_registers() -> list[str]:
     return [
         'A',
         'X',
@@ -63,9 +60,32 @@ def get_registers():
     ]
 
 
-def fhex(i):
+def fhex(i) -> str:
     """
     Convert to hex and  
     Adds '0x' hex prefix
     """
     return f'0x{hex(i)[2:].zfill(4)}'
+
+
+def eval_byte(operand: str) -> int:
+    """
+    evaluates BYTE hexadecimal or character operand
+    """
+    if operand[0] == 'X':
+       return ceil((len(operand) - 3) / 2) # Round up fractions 
+    elif operand[0] == 'C':
+        return (len(operand) - 3)
+
+
+def eval_cs_operand(operand: str) -> int:
+    """
+    evaluates comma seperated operands whether its format 2 or 3
+    """
+    first_operand = operand.split(',')[0]
+
+    if first_operand in get_registers():
+        return 2
+    else:
+        return 3
+    
