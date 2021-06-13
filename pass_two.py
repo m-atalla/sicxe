@@ -1,11 +1,42 @@
 from csv import DictReader
-from typing import List
 from line import Line
+from pass_one import eval_cs_operand
 
-def gen_objcode(asm: List[Line], sym_tab):
+def create_xe_obj(line: Line, sym_tab, opcodes_dict):
+    # skip BASE directive
+    if line.mnemonic == 'BASE':
+        return
+    
+    if line.format == 1:
+        line.objcode = opcodes_dict[line.mnemonic]
+    elif line.format == 2:
+        pass
+    elif line.format == 3:
+        flags = get_flags()
+        op = opcodes_dict[line.mnemonic]
+        if ',' in line.operand:
+            flags['x'] = '1'
+            symbol = line.operand.split(',')[0]
+            ta = sym_tab[symbol]
+
+        
+
+    elif line.format == 4:
+        flags = get_flags()
+        flags['e'] = '1'
+
+
+def get_flags():
+    return {'n': '0', 'i': '0', 'x': '0', 'b': '0', 'p': '0', 'e': '0'}
+    
+        
+
+def gen_objcode(asm: list[Line], sym_tab):
     opcodes_dict = get_opcodes()
     for line in asm:        
-        if line.mnemonic in ['RESW', 'RESB']:
+        if line.format:
+            create_xe_obj(line, sym_tab, opcodes_dict)
+        elif line.mnemonic in ['RESW', 'RESB']:
             line.objcode = ''
         elif line.mnemonic == 'WORD':
             line.objcode = f"0x{hex(int(line.operand))[2:].zfill(6)}"
@@ -29,7 +60,7 @@ def gen_objcode(asm: List[Line], sym_tab):
             line.objcode = f"0x{opcode_hex}{operand_hex[2:]}"
             
 
-def create_hte_record(asm: List[Line]):
+def create_hte_record(asm: list[Line]):
     prog_name = asm[0].label + ('x' * (6 - len(asm[0].label)))
 
     prog_length = hex(int(asm[-1].locctr, base=16) - int(asm[0].locctr, base=16)) 
@@ -62,7 +93,7 @@ def create_hte_record(asm: List[Line]):
 def format_hex(n, fill = 6):
     return n[2:].zfill(fill)
 
-def get_opcodes():
+def get_opcodes() -> dict[str, str]:
     opcodes = {}
     with open('opcodes.csv') as src:
         reader = DictReader(src)
