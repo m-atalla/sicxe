@@ -16,20 +16,18 @@ def main():
 
     sym_table = pass_one.create_sym_table(asm)
 
-    intermediate_file(asm)
     
-    print(sym_table)
+    #print(sym_table)
+    intermediate_file(asm)
 
     # pass two (SIC)
-    """
     pass_two.gen_objcode(asm[1:-1], sym_table)
 
-    
-    pass_two.create_hte_record(asm)
-    """
+    #pass_two.create_hte_record(asm)
 
 
-def intermediate_file(asm):
+
+def intermediate_file(asm: list[Line]):
     with open('out.iasm', 'w') as out:
         out.flush()
         for line in asm:
