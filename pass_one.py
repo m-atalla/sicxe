@@ -21,6 +21,9 @@ def locctr_list(asm: list[Line]):
         elif line.mnemonic == 'RSUB':
             pc += 3
             line.format = 3
+        elif line.mnemonic == 'TIXR':
+            pc += 2
+            line.format = 2
         elif ',' in line.operand:
             pc_incr = line_format = eval_cs_operand(line.operand)
             pc += pc_incr
