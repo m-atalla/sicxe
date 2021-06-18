@@ -1,8 +1,11 @@
 class Line:
     def __init__(self, args):
-
         if len(args) == 3:
             self.label, self.mnemonic ,self.operand = args
+        elif len(args) > 3:
+            self.label = args[0]
+            self.mnemonic = args[1]
+            self.operand = args[2] + ' ' + args[3]
         else:
             self.label, self.mnemonic = args
             self.operand = None
