@@ -1,5 +1,5 @@
 from csv import DictReader
-from line import Line
+from line import Line, fill
 from pass_one import eval_cs_operand
 
 def create_xe_obj(line: Line, sym_tab, opcodes_dict):
@@ -13,13 +13,35 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict):
         pass
     elif line.format == 3:
         flags = get_flags()
-        op = opcodes_dict[line.mnemonic]
+        
+        op_bin = hex2bin(opcodes_dict[line.mnemonic], 8)[:-2] # discard last 2 bits
+
+        # Immediate 
+        if line.operand[0] == '#':
+            flags['n'] = '0'
+            flags['i'] = '1'
+            disp_bin = hex2bin(line.operand[1:], 12)  
+        # Indirect
+        elif line.operand[0] == '@':
+            flags['n'] = '1'
+            flags['i'] = '0'
+            # TODO: indirect addressing
+            raise 'missing implementation'
+
+
         if ',' in line.operand:
             flags['x'] = '1'
             symbol = line.operand.split(',')[0]
-            ta = sym_tab[symbol]
+            ta = sym_tab[symbol]  
 
-        
+        flags_bin = "".join(list(flags.values()))
+        if flags['n'] == '0' and flags['i'] == '1':
+            print('op_bin:', op_bin)
+            print('flags:', flags_bin)
+            print('disp', disp_bin)
+            print(hex(int(op_bin + flags_bin + disp_bin, base=2)))
+            exit()
+
 
     elif line.format == 4:
         flags = get_flags()
@@ -27,7 +49,14 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict):
 
 
 def get_flags():
-    return {'n': '0', 'i': '0', 'x': '0', 'b': '0', 'p': '0', 'e': '0'}
+    return {
+        'n': '1',
+        'i': '1',
+        'x': '0',
+        'b': '0',
+        'p': '0',
+        'e': '0'
+    }
     
         
 
@@ -90,8 +119,17 @@ def create_hte_record(asm: list[Line]):
     
     print(f"E.{format_hex(asm[0].locctr)}")
 
-def format_hex(n, fill = 6):
+def format_hex(n, fill = 6) -> str:
     return n[2:].zfill(fill)
+
+# TODO: Maybe I need to refactor all these helper functions to util module or something.
+# ? would get rid of duplicates and enable pass one to do opcode validation
+def hex2bin(n, fill) -> str:
+    """
+    WITHOUT '0b' PREFIX
+    """
+    return bin(int(n, base=16))[2:].zfill(fill)
+
 
 def get_opcodes() -> dict[str, str]:
     opcodes = {}
