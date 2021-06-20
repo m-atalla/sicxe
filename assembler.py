@@ -18,10 +18,10 @@ def main():
 
     
     #print(sym_table)
-    intermediate_file(asm)
 
     # pass two (SIC)
     pass_two.gen_objcode(asm[1:-1], sym_table)
+    intermediate_file(asm)
 
     #pass_two.create_hte_record(asm)
 
