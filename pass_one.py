@@ -41,6 +41,9 @@ def locctr_list(asm: list[Line]):
            pc += 3
            line.format = 3
 
+        # ? Pass 2 disp
+        line.pc = fhex(pc)
+
     # START directive and first instruction 
     asm[0].locctr = asm[1].locctr
 

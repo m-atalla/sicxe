@@ -13,17 +13,19 @@ class Line:
         self.format = None
         self.locctr = None
         self.objcode = None
+        self.pc = None
     
     def to_iasm(self):
         """
         Intermediate line representation
         """
         iasm = fill(self.locctr)
+        iasm += fill(str(self.pc))
         iasm += fill(self.label)
         iasm += fill(self.mnemonic)
         iasm += fill(self.operand or '')
-        iasm += f" {self.format} "
-        iasm += fill(self.objcode or '') + '\n'
+        iasm += fill(str(self.format))
+        iasm += fill(self.objcode or 'No Obj. Code') + '\n'
         return iasm
     
     def __str__(self):
