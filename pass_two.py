@@ -1,11 +1,25 @@
 from line import Line
-from util import hex2bin, get_opcodes, format_hex, bin2hex, twos_comp
+from util import hex2bin, get_opcodes, format_hex, bin2hex, twos_comp, get_registers
+from assembler import asm
+
+def find_indirect_ta():
+    print(asm)
 
 def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
     if line.format == 1:
         line.objcode = opcodes_dict[line.mnemonic]
     elif line.format == 2:
-        raise 'Missing format 2'
+        line.objcode = opcodes_dict[line.mnemonic]
+
+        registers = line.operand.split(',')
+
+        line.objcode += get_registers()[registers[0]]
+        
+        if len(registers) == 2:
+            line.objcode += get_registers()[registers[1]]
+        else:
+            line.objcode += '0'
+        
     elif line.format == 3 or line.format == 4:
         if line.mnemonic == 'RSUB':
             line.objcode = '4C0000'
@@ -37,8 +51,6 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
         elif line.operand[0] == '@':
             flags['n'] = '1'
             flags['i'] = '0'
-            # TODO: indirect addressing
-            raise 'missing implementation'
 
 
         if ',' in line.operand:
@@ -144,6 +156,9 @@ def create_hte_record(asm: list[Line]):
     
     print(h)
 
+    # M records
+    mod = []
+
     # Skip start directive index
     i = 1 
     while i < len(asm):
@@ -152,13 +167,19 @@ def create_hte_record(asm: list[Line]):
         while i < len(asm) and asm[i].mnemonic not in ['RESB', 'RESW', 'END']:
             if asm[i].objcode:
                 t.append(format_hex(asm[i].objcode))
+            
+            if asm[i].format == 4:
+                mod.append(asm[i].locctr)
             i += 1
 
-        # filter RESB and RESW lists
+        # filter RESB and RESW empty lists
         if len(t) > 0:
             end = asm[i].locctr
             length = format_hex(hex(int(end, base=16) - int(start, base=16)), fill=2)
             print(".".join(["T", format_hex(start), length] + t))
         i += 1
+    
+    for m in mod:
+        print(f"M.{hex(int(m, 16) + 1).removeprefix('0x').zfill(4)}.05");
     
     print(f"E.{format_hex(asm[0].locctr)}")

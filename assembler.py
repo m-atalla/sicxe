@@ -23,7 +23,7 @@ def main():
     pass_two.gen_objcode(asm[1:-1], sym_table)
     intermediate_file(asm)
 
-    #pass_two.create_hte_record(asm)
+    pass_two.create_hte_record(asm)
 
 
 
