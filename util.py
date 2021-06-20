@@ -1,7 +1,7 @@
 from csv import DictReader
 
 def format_hex(n, fill = 6) -> str:
-    return n[2:].zfill(fill)
+    return n.removeprefix('0x')
 
 def hex2bin(n, fill, prefixed = False) -> str:
     start = 2
@@ -24,9 +24,7 @@ def get_opcodes() -> dict[str, str]:
 
 def twos_comp(n, fill_bits) -> str:
     bit_string = bin(n)[2:].zfill(fill_bits)
-
     ones_comp = ''
-
     for bit in bit_string:
         if bit == '0':
             ones_comp += '1'
@@ -37,4 +35,18 @@ def twos_comp(n, fill_bits) -> str:
 
     return twos_comp            
 
-    
+def get_registers() -> dict[str, str]:
+    return {
+        'A': '0',
+        'X': '1',
+        'L': '2',
+        'PC': '8',
+        'SW': '9',
+        'B': '3',
+        'S': '4',
+        'T': '5',
+        'F': '6'
+    }
+
+def get_registers_names() -> list[str]:
+    return list(get_registers().keys())
