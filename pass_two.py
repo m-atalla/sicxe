@@ -1,26 +1,38 @@
-from csv import DictReader
-from line import Line, fill
-from pass_one import eval_cs_operand
+from line import Line
+from util import hex2bin, get_opcodes, format_hex, bin2hex, twos_comp
 
-def create_xe_obj(line: Line, sym_tab, opcodes_dict):
-    # skip BASE directive
-    if line.mnemonic == 'BASE':
-        return
-    
+def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
     if line.format == 1:
         line.objcode = opcodes_dict[line.mnemonic]
     elif line.format == 2:
-        pass
-    elif line.format == 3:
+        raise 'Missing format 2'
+    elif line.format == 3 or line.format == 4:
+        if line.mnemonic == 'RSUB':
+            line.objcode = '4C0000'
+            return
         flags = get_flags()
-        
-        op_bin = hex2bin(opcodes_dict[line.mnemonic], 8)[:-2] # discard last 2 bits
+        disp_bin = None
+
+        if line.format == 4:
+            flags['e'] = '1'
+
+        # Remove '+' in format 4 mnemonic
+        start = int(line.format == 4)
+        op_hex = opcodes_dict[line.mnemonic[start:]]
+        op_bin = hex2bin(op_hex, fill=8)[:-2] # discard last 2 bits
 
         # Immediate 
         if line.operand[0] == '#':
             flags['n'] = '0'
             flags['i'] = '1'
-            disp_bin = hex2bin(line.operand[1:], 12)  
+
+            operand = line.operand[1:]
+
+            # fill bits based on format
+            fill = 12 if line.format == 3 else 20
+
+            disp_bin = immediate_disp(sym_tab, operand, fill=fill)
+
         # Indirect
         elif line.operand[0] == '@':
             flags['n'] = '1'
@@ -32,20 +44,42 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict):
         if ',' in line.operand:
             flags['x'] = '1'
             symbol = line.operand.split(',')[0]
-            ta = sym_tab[symbol]  
+        else:
+            symbol = line.operand
+
+        # PC/Base relative flags and displacement
+        if flags['n'] == '1' and flags['i'] == '1' and line.format == 3:
+            ta = int(sym_tab[symbol], base=16)
+            pc = int(line.pc, base=16)
+            
+            disp_dec = ta - pc
+
+            if  (-2048 <= disp_dec <= 2047):
+                flags['p'] = '1'
+            else:
+                flags['b'] = '1'
+                assert base
+                disp_dec = ta - int(base, base=16)
+            
+            bit_fill = 12 if line.format == 3 else 20
+
+            if disp_dec < 0:
+                disp_bin = twos_comp(disp_dec * -1, bit_fill)
+            else:
+                disp_bin = bin(disp_dec)[2:].zfill(bit_fill)
+
+        
+        if line.format == 4 and line.operand[0] != '#':
+            address = sym_tab[line.operand]
+            address = hex2bin(address, fill=20)
 
         flags_bin = "".join(list(flags.values()))
-        if flags['n'] == '0' and flags['i'] == '1':
-            print('op_bin:', op_bin)
-            print('flags:', flags_bin)
-            print('disp', disp_bin)
-            print(hex(int(op_bin + flags_bin + disp_bin, base=2)))
-            exit()
 
+        obj_fill = 6 if line.format == 3 else 8
 
-    elif line.format == 4:
-        flags = get_flags()
-        flags['e'] = '1'
+        bin_str = op_bin + flags_bin + (disp_bin or address)
+
+        line.objcode = bin2hex(bin_str, obj_fill).upper()
 
 
 def get_flags():
@@ -56,15 +90,25 @@ def get_flags():
         'b': '0',
         'p': '0',
         'e': '0'
-    }
-    
-        
+    }          
+
+def immediate_disp(sym_tab, operand, fill):
+    try:
+        target_address = sym_tab[operand]
+        return hex2bin(target_address, fill)
+    except KeyError:
+        return hex2bin(operand, fill)
 
 def gen_objcode(asm: list[Line], sym_tab):
     opcodes_dict = get_opcodes()
-    for line in asm:        
+    base = None
+    for line in asm:   
+        # Skip BASE directive
+        if line.mnemonic == 'BASE':
+            base = sym_tab[line.operand]
+            continue
         if line.format:
-            create_xe_obj(line, sym_tab, opcodes_dict)
+            create_xe_obj(line, sym_tab, opcodes_dict, base)
         elif line.mnemonic in ['RESW', 'RESB']:
             line.objcode = ''
         elif line.mnemonic == 'WORD':
@@ -118,22 +162,3 @@ def create_hte_record(asm: list[Line]):
         i += 1
     
     print(f"E.{format_hex(asm[0].locctr)}")
-
-def format_hex(n, fill = 6) -> str:
-    return n[2:].zfill(fill)
-
-# TODO: Maybe I need to refactor all these helper functions to util module or something.
-# ? would get rid of duplicates and enable pass one to do opcode validation
-def hex2bin(n, fill) -> str:
-    """
-    WITHOUT '0b' PREFIX
-    """
-    return bin(int(n, base=16))[2:].zfill(fill)
-
-
-def get_opcodes() -> dict[str, str]:
-    opcodes = {}
-    with open('opcodes.csv') as src:
-        reader = DictReader(src)
-        opcodes = {row['mnemonic']:row['opcode'] for row in reader}
-    return opcodes
