@@ -1,15 +1,12 @@
+from assembler import generate_sym_map
 from line import Line
 from util import hex2bin, get_opcodes, format_hex, bin2hex, twos_comp, get_registers
-from assembler import asm
 
-def find_indirect_ta():
-    print(asm)
-
-def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
+def create_xe_obj(line: Line, sym_tab, op_tab, base, asm: list[Line]):
     if line.format == 1:
-        line.objcode = opcodes_dict[line.mnemonic]
+        line.objcode = op_tab[line.mnemonic]
     elif line.format == 2:
-        line.objcode = opcodes_dict[line.mnemonic]
+        line.objcode = op_tab[line.mnemonic]
 
         registers = line.operand.split(',')
 
@@ -32,7 +29,7 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
 
         # Remove '+' in format 4 mnemonic
         start = int(line.format == 4)
-        op_hex = opcodes_dict[line.mnemonic[start:]]
+        op_hex = op_tab[line.mnemonic[start:]]
         op_bin = hex2bin(op_hex, fill=8)[:-2] # discard last 2 bits
 
         # Immediate 
@@ -52,6 +49,16 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
             flags['n'] = '1'
             flags['i'] = '0'
 
+            sym_map = generate_sym_map(asm)
+            
+            operand = line.operand[1:] # remove '@' prefix
+            
+            # ((TA)) evaluates target address of the target address
+            ref = sym_map[operand]
+            
+            target_addres = int(asm[ref.index - 1].locctr, base=16)
+
+
 
         if ',' in line.operand:
             flags['x'] = '1'
@@ -60,25 +67,29 @@ def create_xe_obj(line: Line, sym_tab, opcodes_dict, base):
             symbol = line.operand
 
         # PC/Base relative flags and displacement
-        if flags['n'] == '1' and flags['i'] == '1' and line.format == 3:
-            ta = int(sym_tab[symbol], base=16)
+        if line.format == 3 and line.operand[0] != '#':
+            if line.operand[0] == '@':
+                assert target_addres
+            else:
+                target_addres = int(sym_tab[symbol], base=16)
+
             pc = int(line.pc, base=16)
             
-            disp_dec = ta - pc
+            disp_dec = target_addres - pc
 
+            if line.operand[0] == '@':
+                print(disp_dec)
             if  (-2048 <= disp_dec <= 2047):
                 flags['p'] = '1'
             else:
                 flags['b'] = '1'
                 assert base
-                disp_dec = ta - int(base, base=16)
+                disp_dec = target_addres - int(base, base=16)
             
-            bit_fill = 12 if line.format == 3 else 20
-
             if disp_dec < 0:
-                disp_bin = twos_comp(disp_dec * -1, bit_fill)
+                disp_bin = twos_comp(disp_dec * -1, 12)
             else:
-                disp_bin = bin(disp_dec)[2:].zfill(bit_fill)
+                disp_bin = bin(disp_dec)[2:].zfill(12)
 
         
         if line.format == 4 and line.operand[0] != '#':
@@ -112,15 +123,15 @@ def immediate_disp(sym_tab, operand, fill):
         return hex2bin(operand, fill)
 
 def gen_objcode(asm: list[Line], sym_tab):
-    opcodes_dict = get_opcodes()
+    op_tab = get_opcodes()
     base = None
-    for line in asm:   
+    for line in asm[1:-1]:
         # Skip BASE directive
         if line.mnemonic == 'BASE':
             base = sym_tab[line.operand]
             continue
         if line.format:
-            create_xe_obj(line, sym_tab, opcodes_dict, base)
+            create_xe_obj(line, sym_tab, op_tab, base, asm)
         elif line.mnemonic in ['RESW', 'RESB']:
             line.objcode = ''
         elif line.mnemonic == 'WORD':
@@ -132,7 +143,7 @@ def gen_objcode(asm: list[Line], sym_tab):
                 char_ascii_list = list(map(lambda char: hex(ord(char))[2:], line.operand[2:-1]))
                 line.objcode = "0x" + ("".join(char_ascii_list)).zfill(6)
         else:
-            opcode_hex = opcodes_dict[line.mnemonic]
+            opcode_hex = op_tab[line.mnemonic]
             if ',' in line.operand:
                 # indexed addressing
                 operand = line.operand.split(',')[0]
