@@ -14,6 +14,7 @@ class Line:
         self.locctr = None
         self.objcode = None
         self.pc = None
+        self.index = None
     
     def to_iasm(self):
         """
