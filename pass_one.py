@@ -48,7 +48,7 @@ def locctr_list(asm: list[Line]):
     asm[0].locctr = asm[1].locctr
 
 
-def create_sym_table(asm: list[Line]) -> dict:
+def create_sym_tab(asm: list[Line]) -> dict:
     return {line.label:line.locctr for line in asm[1:] if line.label}
 
 
