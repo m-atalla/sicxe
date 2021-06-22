@@ -5,7 +5,6 @@ FIRST   LDX     #0
         BASE    TABLE2
 LOOP    ADD     TABLE,X
         ADD     TABLE2,X
-        J       @PTR
         TIX     COUNT
         JLT     LOOP
         +STA    TOTAL
