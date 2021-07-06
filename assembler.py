@@ -18,7 +18,7 @@ def main():
 
     sym_tab = pass_one.create_sym_tab(asm)
 
-    # pass two (SIC)
+    # pass two
     pass_two.gen_objcode(asm, sym_tab)
 
     intermediate_file(asm)

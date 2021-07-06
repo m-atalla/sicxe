@@ -1,5 +1,6 @@
 from math import ceil
 from line import Line
+from util import get_registers_names
 
 def locctr_list(asm: list[Line]):
     """
@@ -51,21 +52,6 @@ def locctr_list(asm: list[Line]):
 def create_sym_tab(asm: list[Line]) -> dict:
     return {line.label:line.locctr for line in asm[1:] if line.label}
 
-
-def get_registers() -> list[str]:
-    return [
-        'A',
-        'X',
-        'L',
-        'PC',
-        'SW',
-        'B',
-        'S',
-        'T',
-        'F'
-    ]
-
-
 def fhex(i) -> str:
     """
     Convert to hex and  
@@ -90,7 +76,7 @@ def eval_cs_operand(operand: str) -> int:
     """
     first_operand = operand.split(',')[0]
 
-    if first_operand in get_registers():
+    if first_operand in get_registers_names():
         return 2
     else:
         return 3

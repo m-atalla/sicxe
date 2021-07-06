@@ -28,7 +28,7 @@ def create_xe_obj(line: Line, sym_tab, op_tab, base, asm: list[Line]):
             flags['e'] = '1'
 
         # Remove '+' in format 4 mnemonic
-        start = int(line.format == 4)
+        start = int(line.format == 4) 
         op_hex = op_tab[line.mnemonic[start:]]
         op_bin = hex2bin(op_hex, fill=8)[:-2] # discard last 2 bits
 
@@ -77,8 +77,6 @@ def create_xe_obj(line: Line, sym_tab, op_tab, base, asm: list[Line]):
             
             disp_dec = target_addres - pc
 
-            if line.operand[0] == '@':
-                print(disp_dec)
             if  (-2048 <= disp_dec <= 2047):
                 flags['p'] = '1'
             else:

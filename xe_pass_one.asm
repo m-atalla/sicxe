@@ -8,7 +8,7 @@ LOOP    ADD     TABLE,X
         TIX     COUNT
         JLT     LOOP
         +STA    TOTAL
-        RSUB 
+        ADDR    A,X 
 COUNT   RESW    1
 TABLE   RESW    2000
 TABLE2  RESW    2000

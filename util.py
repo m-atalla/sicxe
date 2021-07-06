@@ -1,7 +1,7 @@
 from csv import DictReader
 
 def format_hex(n, fill = 6) -> str:
-    return n.removeprefix('0x')
+    return n.removeprefix('0x').zfill(fill).upper()
 
 def hex2bin(n, fill, prefixed = False) -> str:
     start = 2
