@@ -1,25 +1,36 @@
 START_LOCATION = 4200
 
 class Prog:
+    # meta data
+    name: str
+    start: int
+    length: int
+    defs: dict[str, str]
+    refs: list[str]
+
+    # obj to be loaded
+    text: list
+    
+    # loader mod instructions
+    mod: list
+
     def __init__(self, hdrtme):
-        """
-        This should probably be a loop using the first col as indicator
-        for which parse method should be called 
-        which should make the loader more flexible in handling edge cases
-        for HDRTME with no defs or refs
-        """
-        header = hdetme[0]
+        self.text = []
+        self.mod = []
+        for record in hdrtme:
+            # record type -> first char in line
+            record_type = record[0]    
 
-        self.parse_header(header)
-
-        defs = hdetme[1]
-
-        self.parse_def(defs)
-
-        refs = hdetme[2]
-        
-        self.parse_ref(refs)
-        
+            if record_type == 'H':
+                self.parse_header(record)
+            elif record_type == 'D':
+                self.parse_def(record)
+            elif record_type == 'R':
+                self.parse_ref(record)
+            elif record_type == 'T':
+                self.parse_text(record)
+            elif record_type == 'M':
+                self.parse_mod(record)
 
     
     def parse_header(self, header: str):
@@ -43,13 +54,28 @@ class Prog:
             self.defs[def_list[i]] = def_list[i + 1]
 
     def parse_ref(self, refs: str):
-        ref_list = refs.split('.')
+        self.refs = [ref for ref in refs.split('.')[1:]]
 
-        self.refs = {}
+    def parse_text(self, t: str):
+        text_list = t.split('.') 
 
-        for i in range(1, len(ref_list), 2):
-            self.refs[ref_list[i]] = ref_list[i + 1]
+        text_parse = {
+            'start': text_list[1],
+            'length': text_list[2],
+            'obj': text_list[3]
+        }
 
+        self.text.append(text_parse)
+
+    def parse_mod(self, mod: str):
+        mod_list = mod.split('.')
+
+        mod_parse = {
+            'start': mod_list[1],
+            'change': mod_list[2]
+        }
+
+        self.mod.append(mod_parse)
     
     def __str__(self):
         return str(self.__dict__)
@@ -59,13 +85,13 @@ def main():
 
     print(mem)
 
-    with open('./linking-loader/prog1.obj') as file:
+    with open('prog1.obj') as file:
         hdetme = [line.removesuffix('\n') for line in file]
 
     prog1 = Prog(hdetme)
 
     print(hdetme)
-    
+    print("-" * 190)
     print(prog1)
 
 if __name__ == "__main__":
