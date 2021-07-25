@@ -10,11 +10,11 @@ class Prog:
     text: list
     
     # loader mod instructions
-    mod: list
+    mods: list
 
     def __init__(self, hdrtme):
         self.text = []
-        self.mod = []
+        self.mods = []
         for record in hdrtme:
             # record type -> first char in line
             record_type = record[0]    
@@ -73,7 +73,7 @@ class Prog:
             'change': mod_list[2]
         }
 
-        self.mod.append(mod_parse)
+        self.mods.append(mod_parse)
     
     def __str__(self):
         return str(self.__dict__)
