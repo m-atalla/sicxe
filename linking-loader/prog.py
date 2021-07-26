@@ -12,9 +12,14 @@ class Prog:
     # loader mod instructions
     mods: list
 
+    # indexes symbols
+    indexes: dict[str, str]
+
     def __init__(self, hdrtme):
         self.text = []
         self.mods = []
+        self.indexes = {}
+
         for record in hdrtme:
             # record type -> first char in line
             record_type = record[0]    
@@ -34,7 +39,9 @@ class Prog:
     def parse_header(self, header: str):
         h_list = header.split('.')
 
-        self.name = h_list[1]
+        self.name = self.parse_symbol(h_list[1])
+
+        self.indexes['01'] = self.name
 
         # Program start location
         self.start = int(h_list[2], base=16) 
@@ -49,10 +56,11 @@ class Prog:
 
         # Adding pairs of definitions and location to defs dict
         for i in range(1, len(def_list), 2):
-            self.defs[def_list[i]] = def_list[i + 1]
+            symbol = self.parse_symbol(def_list[i])
+            self.defs[symbol] = def_list[i + 1]
 
     def parse_ref(self, refs: str):
-        self.refs = [ref for ref in refs.split('.')[1:]]
+        self.refs = [self.parse_symbol(ref) for ref in refs.split('.')[1:]]
 
     def parse_text(self, t: str):
         text_list = t.split('.') 
@@ -75,5 +83,22 @@ class Prog:
 
         self.mods.append(mod_parse)
     
+    def parse_symbol(self, symbol):
+        index = None
+
+        if symbol[0] == '0':
+            index = symbol[:2]
+            symbol = symbol[2:]
+
+        while symbol.startswith('X'):
+            symbol = symbol[1:]
+        
+        # map index to symbol
+        if index:
+            self.indexes[index] = symbol
+
+        return symbol
+        
+
     def __str__(self):
         return str(self.__dict__)
