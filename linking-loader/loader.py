@@ -7,7 +7,6 @@ def main():
 
     memory = [[None for cell in range(16)] for addr in range(rows)]
 
-    header = ([hex(n).removeprefix('0x').upper() for n in range(16)])
 
 
     # ! should be refactored to user input 
@@ -30,24 +29,49 @@ def main():
 
     ext_sym_tab = external_sym_tab(start_addr, programs)
 
-    load(memory, programs, ext_sym_tab)
+    mods = load(memory, programs, ext_sym_tab)
 
-    for mem in memory[1026:1040]:
-        print(mem)
+    display_mod(mods)
+    
+    display_memory(memory, 1026, 1035)
 
+def display_mod(mods):
+    for mod in mods:
+        print(f"Modifications done in: {mod}")
+        print("\taddress\t\t\toperation\tvalue")
+        for change in mods[mod]:
+            print(f"\t{change['address']}\t{change['operation']}\t{change['value']}")
+        print('-'*100)
+
+def display_memory(memory, start, stop):
+    header = ([hex(n).removeprefix('0x').upper() for n in range(16)])
+    div = '  '
+    print('', end='\t')
+    for h in header:
+        print(h + ' ', end=div)
+    print('\n')
+    for i, row in enumerate(memory[start:stop]):
+        index = dec2hex((start + i) * 16)
+        print(f'{index[2:]}:', end='\t') # row num in hexa
+        for cell in row:
+            if cell:
+                print(cell, end=div)
+            else:
+                print(('. ') , end=div)
+        else:
+            print('\n')
+    
 def external_sym_tab(hex_start_addr: str, programs: list[Prog]) -> dict[str, str]:
     sym_tab = {}
 
     for prog in programs:
-        prog.name = remove_symbol_fill(prog.name)
-        
         sym_tab[prog.name] = hex_start_addr
 
         dec_start_addr = hex2dec(hex_start_addr)
 
         for symdef in prog.defs:
             def_addr = dec2hex(hex2dec(prog.defs[symdef]) + dec_start_addr)
-            sym_tab[remove_symbol_fill(symdef)] = def_addr
+            sym_tab[symdef] = def_addr
 
         # increment starting addr by prog length 
         # to correctly set next program(s) starting addr
@@ -61,12 +85,10 @@ def dec2hex(num: int) -> str:
 def hex2dec(hexa: str) -> int:
     return int(hexa, base=16)
 
-def remove_symbol_fill(symbol: str) -> str:
-    while symbol.startswith('X'):
-        symbol = symbol[1:]
-    return symbol
 
-def load(memory, progs: list[Prog], ext_sym_tab) -> None:
+def load(memory, progs: list[Prog], ext_sym_tab):
+    mod_changes = {}
+
     for prog in progs:
         load_offset = hex2dec(ext_sym_tab[prog.name])
 
@@ -89,18 +111,28 @@ def load(memory, progs: list[Prog], ext_sym_tab) -> None:
                 row, col = next_mem_cell(row, col)
 
         # modifications
+        mod_changes[prog.name] = []
+
         for mod in prog.mods:
+
             mod_offset = hex2dec(mod['start']) 
 
             mod_addr = dec2hex(mod_offset + load_offset)
 
-            row, col = parse_hex_addr(mod_addr)
+            change = {
+                'address': f"{mod['start']}+{ext_sym_tab[prog.name]}={mod_addr}"
+            }
+
+            row_index, col_index = parse_hex_addr(mod_addr)
 
             obj = ''
 
+            row, col = row_index, col_index
             while len(obj) < 6:
                 obj = obj + memory[row][col]
                 row, col = next_mem_cell(row, col)
+
+            hex_obj = obj # ? operation logging
 
             obj = hex2dec(obj)
 
@@ -108,6 +140,9 @@ def load(memory, progs: list[Prog], ext_sym_tab) -> None:
 
             mod_symbol = mod['change'][3:]
 
+            if mod_symbol[0] == '0':
+                mod_symbol = prog.indexes[mod_symbol]
+                
             mod_offset = hex2dec(ext_sym_tab[mod_symbol])
 
             # handle negative mod cases
@@ -116,15 +151,21 @@ def load(memory, progs: list[Prog], ext_sym_tab) -> None:
             
             mod_value = dec2hex(obj + mod_offset)
 
-            print(mod_value)
-            exit()
-
-            # TODO: handle 'indexed' mod that reference index instead of mod
-            # ? should probably handle that in program parsing
-            # ? also I need to handle '05' or '06' modification length
-
+            change['operation'] = f"{hex_obj}{mod['change'][2]}{ext_sym_tab[mod_symbol]}"
             
+            change['value'] = mod_value
+
+            while len(mod_value) != 0:
+                memory[row_index][col_index] = mod_value[:2]
+                mod_value = mod_value[2:]
+                row_index, col_index = next_mem_cell(row_index, col_index)
             
+
+            mod_changes[prog.name].append(change)
+   
+    return mod_changes
+            
+
 
 def next_mem_cell(row: int, col: int) -> tuple[int, int]:
     col += 1
@@ -150,7 +191,7 @@ def parse_hex_addr(hex_addr) -> tuple[int, int]:
 
     hex_out_test = (hex(row_index) + hex(col_index)[2:])[2:].zfill(6).upper()
 
-    # ensures that the row and col hex values match the original T record value
+    # ensures that the row and col hex values match the original hex address
     assert hex_addr == hex_out_test
 
     return row_index, col_index
