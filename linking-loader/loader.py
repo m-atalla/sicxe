@@ -1,5 +1,6 @@
 from prog import Prog
 import math
+import argparse
 
 def main():
     # Each row contains 16 addr
@@ -7,41 +8,41 @@ def main():
 
     memory = [[None for cell in range(16)] for addr in range(rows)]
 
+    parser = argparse.ArgumentParser()
 
-
-    # ! should be refactored to user input 
-    start_addr = '004020'
-
-    with open('prog1.hte') as file:
-        hdetme1 = [line.removesuffix('\n') for line in file]
-
-    with open('prog2.hte') as file:
-        hdetme2 = [line.removesuffix('\n') for line in file]
+    parser.add_argument('-i','--input', action='append', nargs='+')
     
-    with open('prog3.hte') as file:
-        hdetme3 = [line.removesuffix('\n') for line in file]
+    args = parser.parse_args().input[0] if parser.parse_args().input else ['prog2', 'prog3', 'prog1']
 
-    prog1 = Prog(hdetme1)
-    prog2 = Prog(hdetme2)
-    prog3 = Prog(hdetme3)
+    programs = []    
 
-    programs = [prog2, prog3, prog1]
+    for arg in args:
+        with open(f'{arg}.hte') as file:
+            programs.append(
+                Prog([line.removesuffix('\n') for line in file])
+            )    
+
+
+    start_addr = '004020'
 
     ext_sym_tab = external_sym_tab(start_addr, programs)
 
     mods = load(memory, programs, ext_sym_tab)
-
-    display_mod(mods)
     
     display_memory(memory, 1026, 1035)
 
+    display_mod(mods)
+
 def display_mod(mods):
+    print('-'*60)
     for mod in mods:
-        print(f"Modifications done in: {mod}")
+        print(f"Modifications done in {mod}:\n")
         print("\taddress\t\t\toperation\tvalue")
         for change in mods[mod]:
             print(f"\t{change['address']}\t{change['operation']}\t{change['value']}")
-        print('-'*100)
+        print('\n')
+    else:
+        print('-'*60)
 
 def display_memory(memory, start, stop):
     header = ([hex(n).removeprefix('0x').upper() for n in range(16)])
@@ -49,7 +50,7 @@ def display_memory(memory, start, stop):
     print('', end='\t')
     for h in header:
         print(h + ' ', end=div)
-    print('\n')
+    print('')
     for i, row in enumerate(memory[start:stop]):
         index = dec2hex((start + i) * 16)
         print(f'{index[2:]}:', end='\t') # row num in hexa
@@ -125,21 +126,26 @@ def load(memory, progs: list[Prog], ext_sym_tab):
 
             row_index, col_index = parse_hex_addr(mod_addr)
 
+            mod_op = mod['change'][2]
+
+            mod_symbol = mod['change'][3:]
+            mod_len = mod['change'][:2]
             obj = ''
 
             row, col = row_index, col_index
-            while len(obj) < 6:
-                obj = obj + memory[row][col]
+            while len(obj) < 5:
+                if mod_len == '05' and len(obj) == 0:
+                    obj = obj + memory[row][col][1]
+                else:
+                    obj = obj + memory[row][col]
+
                 row, col = next_mem_cell(row, col)
 
             hex_obj = obj # ? operation logging
 
             obj = hex2dec(obj)
 
-            mod_op = mod['change'][2]
-
-            mod_symbol = mod['change'][3:]
-
+            # Use index to look up symbol
             if mod_symbol[0] == '0':
                 mod_symbol = prog.indexes[mod_symbol]
                 
@@ -150,14 +156,19 @@ def load(memory, progs: list[Prog], ext_sym_tab):
                 mod_offset *= -1
             
             mod_value = dec2hex(obj + mod_offset)
-
+            
             change['operation'] = f"{hex_obj}{mod['change'][2]}{ext_sym_tab[mod_symbol]}"
             
             change['value'] = mod_value
 
             while len(mod_value) != 0:
-                memory[row_index][col_index] = mod_value[:2]
+                if mod_len == '05' and len(mod_value) == 6:
+                    memory[row][col] = memory[row][col][0] + mod_value[1]
+                else:
+                    memory[row_index][col_index] = mod_value[:2]
+
                 mod_value = mod_value[2:]
+                
                 row_index, col_index = next_mem_cell(row_index, col_index)
             
 
@@ -195,7 +206,6 @@ def parse_hex_addr(hex_addr) -> tuple[int, int]:
     assert hex_addr == hex_out_test
 
     return row_index, col_index
-
 
 if __name__ == "__main__":
     main()
