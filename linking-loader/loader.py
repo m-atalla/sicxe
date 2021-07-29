@@ -155,7 +155,13 @@ def load(memory, progs: list[Prog], ext_sym_tab):
             if mod['change'][2] == '-':
                 mod_offset *= -1
             
-            mod_value = dec2hex(obj + mod_offset)
+            mod_value_dec = obj + mod_offset
+
+            if mod_value_dec < 0:
+                val = twos_comp((mod_value_dec * -1), int(mod_len) * 4)
+                mod_value = dec2hex(val)                
+            else:
+                mod_value = dec2hex(mod_value_dec)
             
             change['operation'] = f"{hex_obj}{mod['change'][2]}{ext_sym_tab[mod_symbol]}"
             
@@ -176,8 +182,6 @@ def load(memory, progs: list[Prog], ext_sym_tab):
    
     return mod_changes
             
-
-
 def next_mem_cell(row: int, col: int) -> tuple[int, int]:
     col += 1
     
@@ -206,6 +210,20 @@ def parse_hex_addr(hex_addr) -> tuple[int, int]:
     assert hex_addr == hex_out_test
 
     return row_index, col_index
+
+def twos_comp(n, fill_bits) -> str:
+    print(n)
+    bit_string = bin(n)[2:].zfill(fill_bits)
+    ones_comp = ''
+    for bit in bit_string:
+        if bit == '0':
+            ones_comp += '1'
+        else:
+            ones_comp += '0'
+    
+    twos_comp = int(ones_comp, base=2) + 1
+
+    return twos_comp     
 
 if __name__ == "__main__":
     main()
