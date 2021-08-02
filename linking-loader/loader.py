@@ -27,48 +27,21 @@ def main():
 
     ext_sym_tab = external_sym_tab(start_addr, programs)
 
-    mods = load(memory, programs, ext_sym_tab)
+    start, end, mods = load(memory, programs, ext_sym_tab)
     
-    display_memory(memory, 1026, 1035)
+    display_memory(memory, start, end)
 
     display_mod(mods)
+    display_sym_tab(ext_sym_tab)
 
-def display_mod(mods):
-    print('-'*60)
-    for mod in mods:
-        print(f"Modifications done in {mod}:\n")
-        print("\taddress\t\t\toperation\tvalue")
-        for change in mods[mod]:
-            print(f"\t{change['address']}\t{change['operation']}\t{change['value']}")
-        print('\n')
-    else:
-        print('-'*60)
-
-def display_memory(memory, start, stop):
-    header = ([hex(n).removeprefix('0x').upper() for n in range(16)])
-    div = '  '
-    print('', end='\t')
-    for h in header:
-        print(h + ' ', end=div)
-    print('')
-    for i, row in enumerate(memory[start:stop]):
-        index = dec2hex((start + i) * 16)
-        print(f'{index[2:]}:', end='\t') # row num in hexa
-        for cell in row:
-            if cell:
-                print(cell, end=div)
-            else:
-                print(('. ') , end=div)
-        else:
-            print('\n')
-    
 def external_sym_tab(hex_start_addr: str, programs: list[Prog]) -> dict[str, str]:
     sym_tab = {}
 
     for prog in programs:
         sym_tab[prog.name] = hex_start_addr
 
-        dec_start_addr = hex2dec(hex_start_addr)
+        # Program start offset
+        dec_start_addr = hex2dec(hex_start_addr) + prog.start
 
         for symdef in prog.defs:
             def_addr = dec2hex(hex2dec(prog.defs[symdef]) + dec_start_addr)
@@ -90,6 +63,15 @@ def hex2dec(hexa: str) -> int:
 def load(memory, progs: list[Prog], ext_sym_tab):
     mod_changes = {}
 
+    # Setting up starting loading address
+    load_start_row, _ = parse_hex_addr(ext_sym_tab[progs[0].name])
+
+
+    # Get last col
+    last_addr = hex2dec(ext_sym_tab[progs[-1].name]) + progs[-1].length
+
+    load_end_row, _ = parse_hex_addr(dec2hex(last_addr))
+
     for prog in progs:
         load_offset = hex2dec(ext_sym_tab[prog.name])
 
@@ -110,10 +92,11 @@ def load(memory, progs: list[Prog], ext_sym_tab):
                 t_record['obj'] = t_record['obj'][2:]
                 
                 row, col = next_mem_cell(row, col)
+        
 
         # modifications
         mod_changes[prog.name] = []
-
+        
         for mod in prog.mods:
 
             mod_offset = hex2dec(mod['start']) 
@@ -121,7 +104,7 @@ def load(memory, progs: list[Prog], ext_sym_tab):
             mod_addr = dec2hex(mod_offset + load_offset)
 
             change = {
-                'address': f"{mod['start']}+{ext_sym_tab[prog.name]}={mod_addr}"
+                'address': f"{ext_sym_tab[prog.name]}+{mod['start']}={mod_addr}"
             }
 
             row_index, col_index = parse_hex_addr(mod_addr)
@@ -176,11 +159,10 @@ def load(memory, progs: list[Prog], ext_sym_tab):
                 mod_value = mod_value[2:]
                 
                 row_index, col_index = next_mem_cell(row_index, col_index)
-            
 
             mod_changes[prog.name].append(change)
    
-    return mod_changes
+    return load_start_row, load_end_row, mod_changes
             
 def next_mem_cell(row: int, col: int) -> tuple[int, int]:
     col += 1
@@ -212,7 +194,6 @@ def parse_hex_addr(hex_addr) -> tuple[int, int]:
     return row_index, col_index
 
 def twos_comp(n, fill_bits) -> str:
-    print(n)
     bit_string = bin(n)[2:].zfill(fill_bits)
     ones_comp = ''
     for bit in bit_string:
@@ -224,6 +205,43 @@ def twos_comp(n, fill_bits) -> str:
     twos_comp = int(ones_comp, base=2) + 1
 
     return twos_comp     
+
+def display_mod(mods):
+    print('-'*60)
+    for mod in mods:
+        print(f"Modifications done in {mod}:\n")
+        print("\taddress\t\t\toperation\tvalue")
+        for change in mods[mod]:
+            print(f"\t{change['address']}\t{change['operation']}\t{change['value']}")
+        print('\n')
+    else:
+        print('-'*60)
+
+def display_memory(memory, start, stop):
+    div = '  '
+
+    header = [hex(n).removeprefix('0x').upper() for n in range(16)]
+    print('', end='\t')
+    for h in header:
+        print(h + ' ', end=div)
+    print('\n')
+
+    for i, row in enumerate(memory[start:stop]):
+        index = dec2hex((start + i) * 16)
+        print(f'{index[2:]}:', end='\t') # row num in hexa
+        for cell in row:
+            if cell:
+                print(cell, end=div)
+            else:
+                print(('. ') , end=div)
+        else:
+            print('')
+
+def display_sym_tab(sym_tab):
+    for sym in sym_tab:
+        if sym.startswith('PROG'):
+            print('-'*12)
+        print(f"{sym}:{sym_tab[sym]}")
 
 if __name__ == "__main__":
     main()
